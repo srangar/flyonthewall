@@ -11,6 +11,31 @@ provider:
 
 
 functions:
+  getCustomer:
+    handler: >-
+      fly_on_the_wall/lambda_handlers/customer_handlers.get_customer
+    timeout: 30
+    iamRoleStatementsName: >-
+      ${self:service}-${self:provider.stage}-getCustomer
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+  createCustomer:
+    handler: >-
+      fly_on_the_wall/lambda_handlers/customer_handlers.create_customer
+    timeout: 30
+    iamRoleStatementsName: >-
+      ${self:service}-${self:provider.stage}-createCustomer
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+        Resource:
+          - {"Fn::GetAtt": ["tenantTable", "Arn"]}
   fleetScan:
     handler: >-
       fly_on_the_wall/lambda_handlers/fleetscan.scan
