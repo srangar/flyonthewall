@@ -1,0 +1,16 @@
+{
+  "name": "flyonthewall",
+  "description": "",
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {
+    "node": "^14.0.0",
+    "npm": "^6.14.8",
+    "serverless": "~2.4.0",
+    "serverless-pseudo-parameters": "^2.5.0",
+    "serverless-iam-roles-per-function": "^2.0.2",
+    "serverless-prune-plugin": "^1.4.3",
+    "serverless-python-requirements": "^5.0.1",
+    "serverless-scriptable-plugin": "^1.0.5"
+  }
+}

@@ -1,0 +1,59 @@
+service: flyonthewall
+
+provider:
+  name: aws
+  runtime: python3.8
+  stage: ${opt:stage, 'dev'}
+  region: us-east-1
+
+  environment:
+    USER_TABLE: ${self:custom.userTableName}
+
+
+functions:
+  sendAlexaNotif:
+    module: lambda_functions/bruleeTenantManagement
+    handler: >-
+      fly_on_the_wall/lambda_handlers/notifications.send_alexa_notifs
+    timeout: 30
+    iamRoleStatementsName: >-
+      ${self:service}-${self:provider.stage}-sendAlexaNotif
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:Scan
+        Resource:
+          - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+
+custom:
+  userTableName: ${self:service}-userTable-${self:provider.stage}
+
+  prune:
+    automatic: true
+    includeLayers: true
+    number: 7
+
+resources:
+  Resources:
+    tenantTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.userTableName}
+        AttributeDefinitions:
+          - AttributeName: customer_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: customer_id
+            KeyType: HASH
+        ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+
+plugins:
+  - serverless-python-requirements
+  - serverless-iam-roles-per-function
+  - serverless-prune-plugin
+  - serverless-pseudo-parameters
+  - serverless-scriptable-plugin
