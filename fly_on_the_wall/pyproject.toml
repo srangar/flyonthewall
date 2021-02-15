@@ -9,6 +9,8 @@ python = "^3.8"
 black = "^20.8b1"
 boto = "^2.49.0"
 requests = "^2.25.1"
+yfinance = "^0.1.55"
+jupyterlab = "^3.0.7"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.6"

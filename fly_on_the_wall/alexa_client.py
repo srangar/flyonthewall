@@ -2,6 +2,9 @@ import json
 import requests
 
 
+NOTIFY_URL = "https://api.notifymyecho.com/v1/NotifyMe"
+
+
 class AlexaClient:
     def __init__(self, alexa_notif_bearer):
         self.alexa_notif_bearer = alexa_notif_bearer
@@ -11,4 +14,4 @@ class AlexaClient:
             {"notification": message, "accessCode": self.alexa_notif_bearer}
         )
 
-        requests.post(url="https://api.notifymyecho.com/v1/NotifyMe", data=body)
+        requests.post(url=NOTIFY_URL, data=body)

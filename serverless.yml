@@ -11,8 +11,22 @@ provider:
 
 
 functions:
+  fleetScan:
+    handler: >-
+      fly_on_the_wall/lambda_handlers/fleetscan.scan
+    timeout: 30
+    iamRoleStatementsName: >-
+      ${self:service}-${self:provider.stage}-fleetScan
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+          - dynamodb:Scan
+        Resource:
+          - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+
   sendAlexaNotif:
-    module: lambda_functions/bruleeTenantManagement
     handler: >-
       fly_on_the_wall/lambda_handlers/notifications.send_alexa_notifs
     timeout: 30

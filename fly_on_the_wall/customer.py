@@ -6,6 +6,26 @@ import botocore.exceptions
 from fly_on_the_wall import exceptions
 
 
+def all_customers() -> Iterable[dict]:
+    table = Customer.table()
+    last_evaluated_key = None
+    kwargs = {}
+
+    while True:
+        if last_evaluated_key:
+            kwargs["ExclusiveStartKey"] = last_evaluated_key
+
+        response = table.scan()
+
+        for item in response.get("Items", []):
+            yield item
+
+        last_evaluated_key = response.get("LastEvaluatedKey")
+
+        if not last_evaluated_key:
+            break
+
+
 class Customer:
     # pylint: disable=too-many-arguments, too-many-instance-attributes
     def __init__(
