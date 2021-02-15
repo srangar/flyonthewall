@@ -11,6 +11,33 @@ provider:
 
 
 functions:
+  processCustomer:
+    handler: >-
+      fly_on_the_wall/lambda_handlers/customer_handlers.process_customer
+    timeout: 30
+    iamRoleStatementsName: >-
+      ${self:service}-${self:provider.stage}-processCustomer
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - processingQueue
+              - Arn
+          destinations:
+            onFailure:
+              arn:
+                Fn::GetAtt:
+                  - processingDlq
+                  - Arn
+              type: sqs
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - sqs:SendMessage
+        Resource:
+          - {"Fn::GetAtt": ["processingDlq", "Arn"]}
+          - {"Fn::GetAtt": ["alertingQueue", "Arn"]}
+  
   getCustomer:
     handler: >-
       fly_on_the_wall/lambda_handlers/customer_handlers.get_customer
@@ -23,6 +50,7 @@ functions:
           - dynamodb:GetItem
         Resource:
           - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+
   createCustomer:
     handler: >-
       fly_on_the_wall/lambda_handlers/customer_handlers.create_customer
@@ -36,6 +64,7 @@ functions:
           - dynamodb:PutItem
         Resource:
           - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+
   fleetScan:
     handler: >-
       fly_on_the_wall/lambda_handlers/fleetscan.scan
@@ -50,6 +79,11 @@ functions:
           - dynamodb:Scan
         Resource:
           - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+      - Effect: Allow
+        Action:
+          - sqs:SendMessage
+        Resource:
+          - {"Fn::GetAtt": ["processingQueue", "Arn"]}
 
   sendAlexaNotif:
     handler: >-
@@ -57,17 +91,32 @@ functions:
     timeout: 30
     iamRoleStatementsName: >-
       ${self:service}-${self:provider.stage}-sendAlexaNotif
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - alertingQueue
+              - Arn
+          destinations:
+            onFailure:
+              arn:
+                Fn::GetAtt:
+                  - alertingDlq
+                  - Arn
+              type: sqs
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - dynamodb:GetItem
-          - dynamodb:Query
-          - dynamodb:Scan
+          - sqs:SendMessage
         Resource:
-          - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+          - {"Fn::GetAtt": ["alertingDlq", "Arn"]}
 
 custom:
   userTableName: ${self:service}-userTable-${self:provider.stage}
+  processingQueueName: ${self:service}-processingQueue-${self:provider.stage}
+  alertingQueueName: ${self:service}-alertingQueue-${self:provider.stage}
+  processingDlqName: ${self:service}-processingDlq-${self:provider.stage}
+  alertingDlqName: ${self:service}-alertingDlq-${self:provider.stage}
 
   prune:
     automatic: true
@@ -89,6 +138,26 @@ resources:
         ProvisionedThroughput:
               ReadCapacityUnits: 1
               WriteCapacityUnits: 1
+
+    processingQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: ${self:custom.processingQueueName}
+
+    alertingQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: ${self:custom.alertingQueueName}
+    
+    processingDlq:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: ${self:custom.processingDlqName}
+
+    alertingDlq:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: ${self:custom.alertingDlqName}
 
 plugins:
   - serverless-python-requirements

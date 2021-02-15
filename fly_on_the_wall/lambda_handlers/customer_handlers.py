@@ -21,3 +21,7 @@ def get_customer(event, _):
     except exceptions.UserLoadError as err:
         print(f"Unable to Load Customer: {customer_id}")
         return {"statusCode": 404}
+
+
+def process_customer(event, _):
+    pass
