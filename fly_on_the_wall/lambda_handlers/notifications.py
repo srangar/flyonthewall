@@ -1,3 +1,5 @@
+import json
+
 from fly_on_the_wall.alexa_client import AlexaClient
 from fly_on_the_wall.customer import Customer
 from fly_on_the_wall import exceptions
@@ -6,7 +8,8 @@ from fly_on_the_wall import exceptions
 def send_alexa_notifs(event, _):
     print(f"Event Received: {event}")
     try:
-        message = event["message"]
+        record = event["Records"][0]
+        message = json.loads(record["body"])["message"]
         customer_id = message["customer_id"]
         notification = message["notification"]
 

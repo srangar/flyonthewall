@@ -12,6 +12,7 @@ provider:
     PROCESSING_QUEUE: ${self:custom.processingQueueName}
     ALERTING_DLQ: ${self:custom.alertingDlqName}
     PROCESSING_DLQ: ${self:custom.processingDlqName}
+    AWS_STACK_REGION: ${self:provider.region}
 
 functions:
   processCustomer:
@@ -22,24 +23,16 @@ functions:
       ${self:service}-${self:provider.stage}-processCustomer
     events:
       - sqs:
-          arn:
-            Fn::GetAtt:
-              - processingQueue
-              - Arn
+          arn: {"Fn::GetAtt": ["processingQueue", "Arn"]}
           destinations:
             onFailure:
-              arn:
-                Fn::GetAtt:
-                  - processingDlq
-                  - Arn
-              type: sqs
+              arn: {"Fn::GetAtt": ["processingDlq", "Arn"]}
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - sqs:SendMessage
+          - sqs:*
         Resource:
-          - {"Fn::GetAtt": ["processingDlq", "Arn"]}
-          - {"Fn::GetAtt": ["alertingQueue", "Arn"]}
+          - "*"
   
   getCustomer:
     handler: >-
@@ -52,7 +45,7 @@ functions:
         Action:
           - dynamodb:GetItem
         Resource:
-          - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+          - {"Fn::GetAtt": ["userTable", "Arn"]}
 
   createCustomer:
     handler: >-
@@ -66,7 +59,7 @@ functions:
           - dynamodb:GetItem
           - dynamodb:PutItem
         Resource:
-          - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+          - {"Fn::GetAtt": ["userTable", "Arn"]}
 
   updateCustomer:
     handler: >-
@@ -80,7 +73,7 @@ functions:
           - dynamodb:GetItem
           - dynamodb:PutItem
         Resource:
-          - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+          - {"Fn::GetAtt": ["userTable", "Arn"]}
 
   fleetScan:
     handler: >-
@@ -95,19 +88,19 @@ functions:
           - dynamodb:Query
           - dynamodb:Scan
         Resource:
-          - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+          - {"Fn::GetAtt": ["userTable", "Arn"]}
       - Effect: Allow
         Action:
-          - sqs:SendMessage
+          - sqs:*
         Resource:
-          - {"Fn::GetAtt": ["processingQueue", "Arn"]}
+          - "*"
 
-  sendAlexaNotif:
+  notifyCustomer:
     handler: >-
       fly_on_the_wall/lambda_handlers/notifications.send_alexa_notifs
     timeout: 30
     iamRoleStatementsName: >-
-      ${self:service}-${self:provider.stage}-sendAlexaNotif
+      ${self:service}-${self:provider.stage}-notifyCustomer
     events:
       - sqs:
           arn:
@@ -127,6 +120,11 @@ functions:
           - sqs:SendMessage
         Resource:
           - {"Fn::GetAtt": ["alertingDlq", "Arn"]}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - {"Fn::GetAtt": ["userTable", "Arn"]}
 
 custom:
   userTableName: ${self:service}-userTable-${self:provider.stage}
@@ -135,6 +133,9 @@ custom:
   processingDlqName: ${self:service}-processingDlq-${self:provider.stage}
   alertingDlqName: ${self:service}-alertingDlq-${self:provider.stage}
 
+  pythonRequirements:
+    dockerizePip: non-linux
+
   prune:
     automatic: true
     includeLayers: true
@@ -142,7 +143,7 @@ custom:
 
 resources:
   Resources:
-    tenantTable:
+    userTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ${self:custom.userTableName}

@@ -18,4 +18,4 @@ class EquityClient:
         open_price = self.get_opening_price()
         price_diff = open_price - float(self.get_current_price())
 
-        return float(price_diff / open_price)
+        return abs(float(price_diff / open_price))

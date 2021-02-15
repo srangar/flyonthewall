@@ -15,3 +15,4 @@ class AlexaClient:
         )
 
         requests.post(url=NOTIFY_URL, data=body)
+        print(f"Alexa Notification Sent: {message}")
