@@ -8,7 +8,10 @@ provider:
 
   environment:
     USER_TABLE: ${self:custom.userTableName}
-
+    ALERTING_QUEUE: ${self:custom.alertingQueueName}
+    PROCESSING_QUEUE: ${self:custom.processingQueueName}
+    ALERTING_DLQ: ${self:custom.alertingDlqName}
+    PROCESSING_DLQ: ${self:custom.processingDlqName}
 
 functions:
   processCustomer:
@@ -57,6 +60,20 @@ functions:
     timeout: 30
     iamRoleStatementsName: >-
       ${self:service}-${self:provider.stage}-createCustomer
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+        Resource:
+          - {"Fn::GetAtt": ["tenantTable", "Arn"]}
+
+  updateCustomer:
+    handler: >-
+      fly_on_the_wall/lambda_handlers/customer_handlers.update_customer
+    timeout: 30
+    iamRoleStatementsName: >-
+      ${self:service}-${self:provider.stage}-updateCustomer
     iamRoleStatements:
       - Effect: Allow
         Action:

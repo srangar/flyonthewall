@@ -1,6 +1,8 @@
+import os
 import json
 import uuid
 from fly_on_the_wall.customer import Customer
+from fly_on_the_wall.message_broker import MessageBroker
 
 
 def create_customer(event, _):
@@ -24,4 +26,41 @@ def get_customer(event, _):
 
 
 def process_customer(event, _):
-    pass
+    print(f"Event Received: {event}")
+
+    message = event["message"]
+    customer_id = message["customer_id"]
+    portfolio = message.get("portfolio")
+    alerts = []
+
+    for stock in portfolio:
+        equity_client = EquityClient(ticker=stock)
+        delta = equity_client.get_delta()
+        print(f"Stock: {stock}, delta: {delta}")
+
+        # If there is 1% change or more in the equity...
+        if delta > 1:
+            alerts.append(stock)
+
+    if alerts:
+        notification = "Please Check Following Stocks: " + ", ".join(alerts)
+        message = {"customer_id": customer_id, "notification": notification}
+        message_broker = MessageBroker(queue_name=os.environ["ALERTING_QUEUE"])
+        message_broker.enqueue(message=message)
+
+
+def update_customer(event, _):
+    try:
+        new_portfolio = event["portfolio"]
+        customer_id = event["customer_id"]
+        customer = Custamer.load(customer_id=customer_id)
+        customer.portfolio = new_portfolio
+        customer.save()
+
+        return {"statusCode": 200}
+    except KeyError as err:
+        print(f"KeryError: {err}")
+        return {
+            "statusCode": 400,
+            "body": json.dumps({"message": "new_portfolio required in event"}),
+        }

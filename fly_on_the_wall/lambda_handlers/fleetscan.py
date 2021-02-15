@@ -1,23 +1,22 @@
 from fly_on_the_wall.customer import all_customers
 from fly_on_the_wall.equity_client import EquityClient
+from fly_on_the_wall.message_broker import MessageBroker
 
 
 def scan(event, _):
-    for item in all_customers():
-        customer_id = item["customer_id"]
-        alexa_notif_bearer = item["alexa_notif_bearer"]
-        portfolio = item.get("portfolio")
+    try:
+        for customer in all_customers():
+            print(f"Customer scanned: {customer}")
 
-        if not portfolio:
-            continue
+            customer_id = customer["customer_id"]
+            portfolio = customer.get("portfolio")
 
-        print(f"Processing Customer: {customer_id}")
+            if not portfolio:
+                continue
 
-        for stock in portfolio:
-            equity_client = EquityClient(ticker=stock)
-            delta = equity_client.get_delta()
-            print(f"Stock: {stock}, delta: {delta}")
-
-
-def _push_to_alerting_queue():
-    pass
+            message = {"customer_id": customer_id, "portfolio": portfolio}
+            message_broker = MessageBroker(queue_name=os.environ["PROCESSING_QUEUE"])
+            message_broker.enqueue(message=message)
+    except Exception as err:
+        print(f"Encountered Excption: {err}, skipping")
+        continue

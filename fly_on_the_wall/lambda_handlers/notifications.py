@@ -4,13 +4,15 @@ from fly_on_the_wall import exceptions
 
 
 def send_alexa_notifs(event, _):
+    print(f"Event Received: {event}")
     try:
-        customer_id = event["customer_id"]
         message = event["message"]
+        customer_id = message["customer_id"]
+        notification = message["notification"]
 
         customer = Customer.load(customer_id=customer_id)
         alexa_client = AlexaClient(alexa_notif_bearer=customer.alexa_notif_bearer)
-        alexa_client.send_notification(message=message)
+        alexa_client.send_notification(message=notification)
 
         return True
     except KeyError as err:
